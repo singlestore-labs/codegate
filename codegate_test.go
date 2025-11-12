@@ -45,7 +45,7 @@ func TestGateNames(t *testing.T) {
 }
 
 func TestDisableOneGate(t *testing.T) {
-	_ = os.Setenv("DISABLE_S2CODE_Bar", "disabled")
+	_ = os.Setenv("DISABLE_Bar", "disabled")
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
@@ -64,8 +64,8 @@ func TestDisableMultipleGates(t *testing.T) {
 	_ = os.Setenv("DISABLE_CODE", "")
 
 	// disable two gates
-	_ = os.Setenv("DISABLE_S2CODE_Baz1", "disabled")
-	_ = os.Setenv("DISABLE_S2CODE_Baz3", "disabled")
+	_ = os.Setenv("DISABLE_Baz1", "disabled")
+	_ = os.Setenv("DISABLE_Baz3", "disabled")
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
