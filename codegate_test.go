@@ -61,7 +61,7 @@ func TestDisableMultipleGates(t *testing.T) {
 	// create some random environment variables
 	_ = os.Setenv("NOISE", "LOUD")
 	_ = os.Setenv("MORE_NOISE", "LOUDER")
-	_ = os.Setenv("DISABLE_CODE", "")
+	_ = os.Setenv("DISABLED_CODE", "")
 
 	// disable two gates
 	_ = os.Setenv("DISABLE_Baz1", "disabled")
