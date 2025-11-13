@@ -24,9 +24,10 @@ const (
 var (
 	validName     = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_]*$")
 	usedNames     = map[string]struct{}{}
-	gateLock      = sync.Mutex{}
 	disabledGates []string
 )
+
+var gateLock sync.Mutex
 
 // New creates a code gate. Code gate names must be globally unique and should
 // be defined in static initializers. For example,
@@ -92,9 +93,7 @@ func (gate Gate) String() string {
 
 func DisabledGates() []string {
 	if disabledGates == nil {
-		gateLock.Lock()
 		refreshDisabledGates()
-		gateLock.Unlock()
 	}
 
 	return disabledGates
@@ -103,8 +102,9 @@ func DisabledGates() []string {
 // refreshDisabledGates refreshes the list of disabled gates by going through
 // the environment variables.
 func refreshDisabledGates() {
+	gateLock.Lock()
+	defer gateLock.Unlock()
 	disabledGates = []string{}
-
 	// Get all disabled code gates from the environment variables.
 	for _, env := range os.Environ() {
 		envName, _, _ := strings.Cut(env, "=")
