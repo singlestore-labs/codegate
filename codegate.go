@@ -104,7 +104,7 @@ func DisabledGates() []string {
 func refreshDisabledGates() {
 	gateLock.Lock()
 	defer gateLock.Unlock()
-	disabledGates = []string{}
+	tempGate := []string{}
 	// Get all disabled code gates from the environment variables.
 	for _, env := range os.Environ() {
 		envName, _, _ := strings.Cut(env, "=")
@@ -112,4 +112,5 @@ func refreshDisabledGates() {
 			disabledGates = append(disabledGates, strings.TrimPrefix(envName, gateEnvVarPrefix))
 		}
 	}
+	disabledGates = tempGate
 }
