@@ -91,13 +91,11 @@ func TestDisableMultipleGates(t *testing.T) {
 func TestRefreshDisabledGates(t *testing.T) {
 	// ensure no disabled gates at start
 	_ = os.Unsetenv("DISABLE_Foo")
-	disabledGates := DisabledGates(false)
-	require.NotContains(t, disabledGates, "Foo")
+	require.NotContains(t, DisabledGates(false), "Foo")
 
 	// disable Foo
 	_ = os.Setenv("DISABLE_Foo", "disabled")
-	disabledGates = DisabledGates(false)
-	require.NotContains(t, disabledGates, "Foo")
+	require.NotContains(t, DisabledGates(false), "Foo")
 	// refresh disabled gates
 	require.Contains(t, DisabledGates(true), "Foo", "DisabledGates(true) should refresh the disabled gates")
 }
