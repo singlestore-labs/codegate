@@ -24,14 +24,10 @@ const (
 var (
 	validName     = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_]*$")
 	usedNames     = map[string]struct{}{}
-	nameLock      = sync.Mutex{}
 	disabledGates []string
 )
 
-func init() {
-	// Declare a gate for use in test cases. This gate is disabled in the code-gate-toggles configmap.
-	_ = New("DisabledTestCodeGate")
-}
+var gateLock sync.Mutex
 
 // New creates a code gate. Code gate names must be globally unique and should
 // be defined in static initializers. For example,
@@ -47,8 +43,8 @@ func New(name string) Gate {
 		panic(fmt.Errorf(`code gate name (%s) is invalid. Code gate names must begin with an alpha, contain only alphanumerics or underbars, and be no more than %d characters in length`,
 			name, gateNameMaxLength))
 	}
-	nameLock.Lock()
-	defer nameLock.Unlock()
+	gateLock.Lock()
+	defer gateLock.Unlock()
 	if _, ok := usedNames[name]; ok {
 		panic(fmt.Errorf(`code gate name (%s) has been used twice. Code gate names must be unique`, name))
 	}
@@ -95,24 +91,18 @@ func (gate Gate) String() string {
 	return label + " (disabled)"
 }
 
-func DisabledGates() []string {
-	if disabledGates == nil {
-		refreshDisabledGates()
-	}
-
-	return disabledGates
-}
-
-// refreshDisabledGates refreshes the list of disabled gates by going through
-// the environment variables.
-func refreshDisabledGates() {
-	disabledGates = []string{}
-
-	// Get all disabled code gates from the environment variables.
-	for _, env := range os.Environ() {
-		envName, _, _ := strings.Cut(env, "=")
-		if strings.HasPrefix(envName, gateEnvVarPrefix) {
-			disabledGates = append(disabledGates, strings.TrimPrefix(envName, gateEnvVarPrefix))
+func DisabledGates(forceRefresh bool) []string {
+	gateLock.Lock()
+	defer gateLock.Unlock()
+	if forceRefresh || disabledGates == nil {
+		disabledGates = []string{}
+		// Get all disabled code gates from the environment variables.
+		for _, env := range os.Environ() {
+			envName, _, _ := strings.Cut(env, "=")
+			if strings.HasPrefix(envName, gateEnvVarPrefix) {
+				disabledGates = append(disabledGates, strings.TrimPrefix(envName, gateEnvVarPrefix))
+			}
 		}
 	}
+	return disabledGates
 }

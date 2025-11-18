@@ -17,7 +17,7 @@ import (
 func TestNoDisabledGates(t *testing.T) {
 	gateTestFoo := New("FOO")
 	require.True(t, gateTestFoo.Enabled(), "arbitrary code behavior should be enabled by default")
-	require.NotContains(t, DisabledGates(), "FOO")
+	require.NotContains(t, DisabledGates(true), "FOO")
 }
 
 func TestGateNames(t *testing.T) {
@@ -49,12 +49,12 @@ func TestDisableOneGate(t *testing.T) {
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
-	refreshDisabledGates()
+	DisabledGates(true)
 
 	gateTestBar := New("Bar")
 	require.False(t, gateTestBar.Enabled(), "Bar should be disabled")
 	require.True(t, New("Bar2").Enabled(), "Other gates should be enabled")
-	require.Contains(t, DisabledGates(), "Bar")
+	require.Contains(t, DisabledGates(false), "Bar")
 }
 
 func TestDisableMultipleGates(t *testing.T) {
@@ -69,7 +69,7 @@ func TestDisableMultipleGates(t *testing.T) {
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
-	refreshDisabledGates()
+	DisabledGates(true)
 
 	// define four gates
 	gateTestBaz1 := New("Baz1")
@@ -82,8 +82,20 @@ func TestDisableMultipleGates(t *testing.T) {
 	require.False(t, gateTestBaz3.Enabled(), "Baz3 should be disabled")
 	require.True(t, gateTestBaz4.Enabled(), "Baz4 should be enabled")
 
-	require.Contains(t, DisabledGates(), "Baz1")
-	require.NotContains(t, DisabledGates(), "Baz2")
-	require.Contains(t, DisabledGates(), "Baz3")
-	require.NotContains(t, DisabledGates(), "Baz4")
+	require.Contains(t, DisabledGates(false), "Baz1")
+	require.NotContains(t, DisabledGates(false), "Baz2")
+	require.Contains(t, DisabledGates(false), "Baz3")
+	require.NotContains(t, DisabledGates(false), "Baz4")
+}
+
+func TestRefreshDisabledGates(t *testing.T) {
+	// ensure no disabled gates at start
+	_ = os.Unsetenv("DISABLE_Foo")
+	require.NotContains(t, DisabledGates(false), "Foo")
+
+	// disable Foo
+	_ = os.Setenv("DISABLE_Foo", "disabled")
+	require.NotContains(t, DisabledGates(false), "Foo")
+	// refresh disabled gates
+	require.Contains(t, DisabledGates(true), "Foo", "DisabledGates(true) should refresh the disabled gates")
 }
