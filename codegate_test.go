@@ -49,12 +49,12 @@ func TestDisableOneGate(t *testing.T) {
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
-	disabledGates := DisabledGates(false)
+	DisabledGates(true)
 
 	gateTestBar := New("Bar")
 	require.False(t, gateTestBar.Enabled(), "Bar should be disabled")
 	require.True(t, New("Bar2").Enabled(), "Other gates should be enabled")
-	require.Contains(t, disabledGates, "Bar")
+	require.Contains(t, DisabledGates(false), "Bar")
 }
 
 func TestDisableMultipleGates(t *testing.T) {
@@ -69,7 +69,7 @@ func TestDisableMultipleGates(t *testing.T) {
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
-	disabledGates = DisabledGates(false)
+	DisabledGates(true)
 
 	// define four gates
 	gateTestBaz1 := New("Baz1")
@@ -82,10 +82,10 @@ func TestDisableMultipleGates(t *testing.T) {
 	require.False(t, gateTestBaz3.Enabled(), "Baz3 should be disabled")
 	require.True(t, gateTestBaz4.Enabled(), "Baz4 should be enabled")
 
-	require.Contains(t, disabledGates, "Baz1")
-	require.NotContains(t, disabledGates, "Baz2")
-	require.Contains(t, disabledGates, "Baz3")
-	require.NotContains(t, disabledGates, "Baz4")
+	require.Contains(t, DisabledGates(false), "Baz1")
+	require.NotContains(t, DisabledGates(false), "Baz2")
+	require.Contains(t, DisabledGates(false), "Baz3")
+	require.NotContains(t, DisabledGates(false), "Baz4")
 }
 
 func TestRefreshDisabledGates(t *testing.T) {
@@ -98,7 +98,6 @@ func TestRefreshDisabledGates(t *testing.T) {
 	_ = os.Setenv("DISABLE_Foo", "disabled")
 	disabledGates = DisabledGates(false)
 	require.NotContains(t, disabledGates, "Foo")
-
-	disabledGates = DisabledGates(true)
-	require.Contains(t, disabledGates, "Foo", "DisabledGates(true) should refresh the disabled gates")
+	// refresh disabled gates
+	require.Contains(t, DisabledGates(true), "Foo", "DisabledGates(true) should refresh the disabled gates")
 }
