@@ -91,26 +91,18 @@ func (gate Gate) String() string {
 	return label + " (disabled)"
 }
 
-func DisabledGates() []string {
-	if disabledGates == nil {
-		refreshDisabledGates()
-	}
-
-	return disabledGates
-}
-
-// refreshDisabledGates refreshes the list of disabled gates by going through
-// the environment variables.
-func refreshDisabledGates() {
+func DisabledGates(forceRefresh bool) []string {
 	gateLock.Lock()
 	defer gateLock.Unlock()
-	tempGate := []string{}
-	// Get all disabled code gates from the environment variables.
-	for _, env := range os.Environ() {
-		envName, _, _ := strings.Cut(env, "=")
-		if strings.HasPrefix(envName, gateEnvVarPrefix) {
-			disabledGates = append(disabledGates, strings.TrimPrefix(envName, gateEnvVarPrefix))
+	if forceRefresh || disabledGates == nil {
+		disabledGates = []string{}
+		// Get all disabled code gates from the environment variables.
+		for _, env := range os.Environ() {
+			envName, _, _ := strings.Cut(env, "=")
+			if strings.HasPrefix(envName, gateEnvVarPrefix) {
+				disabledGates = append(disabledGates, strings.TrimPrefix(envName, gateEnvVarPrefix))
+			}
 		}
 	}
-	disabledGates = tempGate
+	return disabledGates
 }
