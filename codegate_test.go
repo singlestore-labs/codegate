@@ -8,16 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Code gates are somewhat troublesome to test due to the reliance on a static environment variable
-// at the time of the gate creation. All tests run in the same environment, so setting an environment
-// variable in one test may affect other tests (depending on order.) DisableGates() testing only
-// works because it is implemented to dynamically inspect the environment at call time and does not
-// cache results.
+// Code gates are troublesome to test due to the reliance on static environment
+// variables at the time of the gate creation. All tests run in the same environment,
+// so setting an environment in one test may affect other tests. All tests in this
+// file should use unique gate names to avoid conflicts.
 
 func TestNoDisabledGates(t *testing.T) {
 	gateTestFoo := New("FOO")
 	require.True(t, gateTestFoo.Enabled(), "arbitrary code behavior should be enabled by default")
-	require.NotContains(t, DisabledGates(true), "FOO")
+	require.NotContains(t, DisabledGates(), "FOO")
 }
 
 func TestGateNames(t *testing.T) {
@@ -45,16 +44,16 @@ func TestGateNames(t *testing.T) {
 }
 
 func TestDisableOneGate(t *testing.T) {
-	_ = os.Setenv("DISABLE_Bar", "disabled")
+	_ = os.Setenv("DISABLE_CODE_Bar", "disabled")
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
-	DisabledGates(true)
+	resetDisabledGates()
 
 	gateTestBar := New("Bar")
 	require.False(t, gateTestBar.Enabled(), "Bar should be disabled")
 	require.True(t, New("Bar2").Enabled(), "Other gates should be enabled")
-	require.Contains(t, DisabledGates(false), "Bar")
+	require.Contains(t, DisabledGates(), "Bar")
 }
 
 func TestDisableMultipleGates(t *testing.T) {
@@ -62,14 +61,15 @@ func TestDisableMultipleGates(t *testing.T) {
 	_ = os.Setenv("NOISE", "LOUD")
 	_ = os.Setenv("MORE_NOISE", "LOUDER")
 	_ = os.Setenv("DISABLED_CODE", "")
+	_ = os.Setenv("DISABLED_CODE_TOO", "")
 
 	// disable two gates
-	_ = os.Setenv("DISABLE_Baz1", "disabled")
-	_ = os.Setenv("DISABLE_Baz3", "disabled")
+	_ = os.Setenv("DISABLE_CODE_Baz1", "disabled")
+	_ = os.Setenv("DISABLE_CODE_Baz3", "disabled")
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
-	DisabledGates(true)
+	resetDisabledGates()
 
 	// define four gates
 	gateTestBaz1 := New("Baz1")
@@ -82,20 +82,21 @@ func TestDisableMultipleGates(t *testing.T) {
 	require.False(t, gateTestBaz3.Enabled(), "Baz3 should be disabled")
 	require.True(t, gateTestBaz4.Enabled(), "Baz4 should be enabled")
 
-	require.Contains(t, DisabledGates(false), "Baz1")
-	require.NotContains(t, DisabledGates(false), "Baz2")
-	require.Contains(t, DisabledGates(false), "Baz3")
-	require.NotContains(t, DisabledGates(false), "Baz4")
+	require.Contains(t, DisabledGates(), "Baz1")
+	require.NotContains(t, DisabledGates(), "Baz2")
+	require.Contains(t, DisabledGates(), "Baz3")
+	require.NotContains(t, DisabledGates(), "Baz4")
 }
 
-func TestRefreshDisabledGates(t *testing.T) {
+func TestResetDisabledGates(t *testing.T) {
 	// ensure no disabled gates at start
-	_ = os.Unsetenv("DISABLE_Foo")
-	require.NotContains(t, DisabledGates(false), "Foo")
+	_ = os.Unsetenv("DISABLE_CODE_Foo")
+	require.NotContains(t, DisabledGates(), "Foo")
 
 	// disable Foo
-	_ = os.Setenv("DISABLE_Foo", "disabled")
-	require.NotContains(t, DisabledGates(false), "Foo")
+	_ = os.Setenv("DISABLE_CODE_Foo", "disabled")
+	require.NotContains(t, DisabledGates(), "Foo")
 	// refresh disabled gates
-	require.Contains(t, DisabledGates(true), "Foo", "DisabledGates(true) should refresh the disabled gates")
+	resetDisabledGates()
+	require.Contains(t, DisabledGates(), "Foo", "DisabledGates(true) should refresh the disabled gates")
 }
