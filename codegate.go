@@ -26,12 +26,10 @@ var EnvVarPrefix = "DISABLE_CODE_"
 const nameMaxLength = 100
 
 var (
-	validName     = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_]*$")
-	usedNames     = map[string]struct{}{}
-	disabledGates []string
+	validName = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_]*$")
+	usedNames = map[string]struct{}{}
+	gateLock  sync.Mutex
 )
-
-var gateLock sync.Mutex
 
 // New creates a code gate. Code gate names must be globally unique and should
 // be defined in static initializers. For example,
@@ -95,20 +93,14 @@ func (gate Gate) String() string {
 	return label + " (disabled)"
 }
 
-// DisabledGates returns the names of all currently disabled code gates. If
-// forceRefresh is true, the list is reloaded from the environment variables.
-// forceRefresh should only be used for testing purposes.
-func DisabledGates(forceRefresh bool) []string {
-	gateLock.Lock()
-	defer gateLock.Unlock()
-	if forceRefresh || disabledGates == nil {
-		disabledGates = []string{}
-		// Get all disabled code gates from the environment variables.
-		for _, env := range os.Environ() {
-			envName, _, _ := strings.Cut(env, "=")
-			if strings.HasPrefix(envName, EnvVarPrefix) {
-				disabledGates = append(disabledGates, strings.TrimPrefix(envName, EnvVarPrefix))
-			}
+// DisabledGates returns the names of all disabled code gates based on
+// current environment variables.
+func DisabledGates() []string {
+	disabledGates := []string{}
+	for _, env := range os.Environ() {
+		envName, _, _ := strings.Cut(env, "=")
+		if strings.HasPrefix(envName, EnvVarPrefix) {
+			disabledGates = append(disabledGates, strings.TrimPrefix(envName, EnvVarPrefix))
 		}
 	}
 	return disabledGates
