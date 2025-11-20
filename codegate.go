@@ -16,10 +16,14 @@ type Gate struct {
 	enabled bool
 }
 
-const (
-	gateNameMaxLength = 100
-	gateEnvVarPrefix  = "DISABLE_"
-)
+// EnvVarPrefix is the prefix for environment variables used to disable
+// code gates. This prefix is defined in an exported variable so that it
+// may be changed at compile time with build flags:
+//
+//	go build -ldflags "-X 'github.com/singlestore-labs/codegate.EnvVarPrefix=MY_PREFIX_'"
+var EnvVarPrefix = "DISABLE_CODE_"
+
+const nameMaxLength = 100
 
 var (
 	validName     = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_]*$")
@@ -39,17 +43,17 @@ var gateLock sync.Mutex
 // for each code domain (e.g., "RBAC" for RBAC related behaviors) is recommended.
 // New panics if the name is missing, invalid, or is a duplicate.
 func New(name string) Gate {
-	if !validName.MatchString(name) || len(name) > gateNameMaxLength {
+	if !validName.MatchString(name) || len(name) > nameMaxLength {
 		panic(fmt.Errorf(`code gate name (%s) is invalid. Code gate names must begin with an alpha, contain only alphanumerics or underbars, and be no more than %d characters in length`,
-			name, gateNameMaxLength))
+			name, nameMaxLength))
 	}
 	gateLock.Lock()
 	defer gateLock.Unlock()
 	if _, ok := usedNames[name]; ok {
-		panic(fmt.Errorf(`code gate name (%s) has been used twice. Code gate names must be unique`, name))
+		panic(fmt.Errorf(`code gate name (%s) is already in use. Code gate names must be unique`, name))
 	}
 	usedNames[name] = struct{}{}
-	_, ok := os.LookupEnv(gateEnvVarPrefix + name)
+	_, ok := os.LookupEnv(EnvVarPrefix + name)
 	return Gate{
 		name:    name,
 		enabled: !ok,
@@ -102,8 +106,8 @@ func DisabledGates(forceRefresh bool) []string {
 		// Get all disabled code gates from the environment variables.
 		for _, env := range os.Environ() {
 			envName, _, _ := strings.Cut(env, "=")
-			if strings.HasPrefix(envName, gateEnvVarPrefix) {
-				disabledGates = append(disabledGates, strings.TrimPrefix(envName, gateEnvVarPrefix))
+			if strings.HasPrefix(envName, EnvVarPrefix) {
+				disabledGates = append(disabledGates, strings.TrimPrefix(envName, EnvVarPrefix))
 			}
 		}
 	}
