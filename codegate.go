@@ -91,6 +91,9 @@ func (gate Gate) String() string {
 	return label + " (disabled)"
 }
 
+// DisabledGates returns the names of all currently disabled code gates. If
+// forceRefresh is true, the list is reloaded from the environment variables.
+// forceRefresh should only be used for testing purposes.
 func DisabledGates(forceRefresh bool) []string {
 	gateLock.Lock()
 	defer gateLock.Unlock()
