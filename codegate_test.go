@@ -1,7 +1,6 @@
 package codegate
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -44,7 +43,7 @@ func TestGateNames(t *testing.T) {
 }
 
 func TestDisableOneGate(t *testing.T) {
-	_ = os.Setenv("DISABLE_CODE_Bar", "disabled")
+	t.Setenv("DISABLE_CODE_Bar", "disabled")
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
@@ -56,16 +55,29 @@ func TestDisableOneGate(t *testing.T) {
 	require.Contains(t, DisabledGates(), "Bar")
 }
 
+func TestDisableOldGate(t *testing.T) {
+	t.Setenv("DISABLE_S2CODE_Deprecated", "disabled")
+
+	// refresh disabled gates to pick up the changes to the environment
+	// variables
+	resetDisabledGates()
+
+	gateTestDeprecated := New("Deprecated")
+	require.False(t, gateTestDeprecated.Enabled(), "Deprecated should be disabled")
+	require.True(t, New("Deprecated2").Enabled(), "Other gates should be enabled")
+	require.Contains(t, DisabledGates(), "Deprecated")
+}
+
 func TestDisableMultipleGates(t *testing.T) {
 	// create some random environment variables
-	_ = os.Setenv("NOISE", "LOUD")
-	_ = os.Setenv("MORE_NOISE", "LOUDER")
-	_ = os.Setenv("DISABLED_CODE", "")
-	_ = os.Setenv("DISABLED_CODE_TOO", "")
+	t.Setenv("NOISE", "LOUD")
+	t.Setenv("MORE_NOISE", "LOUDER")
+	t.Setenv("DISABLED_CODE", "")
+	t.Setenv("DISABLED_CODE_TOO", "")
 
 	// disable two gates
-	_ = os.Setenv("DISABLE_CODE_Baz1", "disabled")
-	_ = os.Setenv("DISABLE_CODE_Baz3", "disabled")
+	t.Setenv("DISABLE_CODE_Baz1", "disabled")
+	t.Setenv("DISABLE_CODE_Baz3", "disabled")
 
 	// refresh disabled gates to pick up the changes to the environment
 	// variables
@@ -90,11 +102,10 @@ func TestDisableMultipleGates(t *testing.T) {
 
 func TestResetDisabledGates(t *testing.T) {
 	// ensure no disabled gates at start
-	_ = os.Unsetenv("DISABLE_CODE_Foo")
 	require.NotContains(t, DisabledGates(), "Foo")
 
 	// disable Foo
-	_ = os.Setenv("DISABLE_CODE_Foo", "disabled")
+	t.Setenv("DISABLE_CODE_Foo", "disabled")
 	require.NotContains(t, DisabledGates(), "Foo")
 	// refresh disabled gates
 	resetDisabledGates()

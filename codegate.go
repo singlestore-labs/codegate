@@ -20,19 +20,26 @@ type Gate struct {
 //
 //	go build -ldflags "-X 'github.com/singlestore-labs/codegate.EnvVarPrefix=MY_PREFIX_'"
 //
-// This variable should not be changed at runtime.
-var EnvVarPrefix = "DISABLE_CODE_"
+// This variable should not be changed at runtime including in init functions,
+// because it is used by the New function which may be called in static
+// initializers.
+var (
+	EnvVarPrefix = "DISABLE_CODE_"
+)
 
-const nameMaxLength = 100
+const (
+	// Deprecated: use DISABLE_CODE_ prefix instead
+	envVarPrefix2 = "DISABLE_S2CODE_"
+	nameMaxLength = 100
+)
 
 var (
 	// gate names must be valid environment variable names
 	validName     = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_]*$")
 	usedNames     = map[string]struct{}{}
 	disabledGates []string
+	gateLock      sync.Mutex
 )
-
-var gateLock sync.Mutex
 
 // New creates a code gate. Code gate names must be globally unique and should
 // be defined in static initializers. For example,
@@ -50,14 +57,17 @@ func New(name string) Gate {
 	}
 	gateLock.Lock()
 	defer gateLock.Unlock()
-	if _, ok := usedNames[name]; ok {
+	if _, found := usedNames[name]; found {
 		panic(fmt.Errorf(`code gate name (%s) is already in use. Code gate names must be unique`, name))
 	}
 	usedNames[name] = struct{}{}
-	_, ok := os.LookupEnv(EnvVarPrefix + name)
+	_, disabled := os.LookupEnv(EnvVarPrefix + name)
+	if !disabled {
+		_, disabled = os.LookupEnv(envVarPrefix2 + name)
+	}
 	return Gate{
 		name:    name,
-		enabled: !ok,
+		enabled: !disabled,
 	}
 }
 
@@ -110,6 +120,8 @@ func DisabledGates() []string {
 			envName, _, _ := strings.Cut(env, "=")
 			if strings.HasPrefix(envName, EnvVarPrefix) {
 				disabledGates = append(disabledGates, strings.TrimPrefix(envName, EnvVarPrefix))
+			} else if strings.HasPrefix(envName, envVarPrefix2) {
+				disabledGates = append(disabledGates, strings.TrimPrefix(envName, envVarPrefix2))
 			}
 		}
 	}
