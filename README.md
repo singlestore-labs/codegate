@@ -36,7 +36,7 @@ once.
 ## Controlling the Gate
 
 Code gates are controlled by environment variables. Code gates are created in the enabled state unless an environment
-variable named `DISABLE_<codegate-name>` is found in the process environment. The value of the variable is ignored;
+variable named `DISABLE_CODE_<codegate-name>` is found in the process environment. The value of the variable is ignored;
 any value, including blank, is sufficient to disable the code gate. The normal use case for a code gate is to disable or
 revert some code by defining the code gate environment variable and *restarting* the service or application.
 
